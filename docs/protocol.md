@@ -75,6 +75,16 @@ Per machine:
   USB path. BLE exists in Design Space only in `cricut-device-io` for the
   Bifrost generation; no BLE UUIDs were found for our four machines.
 
+  Confirmed live on a Joy Xtra over SDP **(observed on a real device)**: it is
+  classic Bluetooth BR/EDR (an SDP server with a PnP Information record, not pure
+  BLE). The command channel is a Serial Port Profile service ("Telink Serial Port
+  Service", chip vendor Telink Semiconductor) on **L2CAP + RFCOMM channel 4**.
+  A second RFCOMM service on channel 7 is iAP2 (Apple accessory protocol, UUID
+  `00000000-deca-fade-deca-deafdecacaff`) for iOS hosts. PnP record:
+  SpecificationID `0x0102`, VendorID `0x0792`, ProductID `0x0002`. So a Joy Xtra
+  is driven over RFCOMM channel 4; pairing and the encrypted session on that
+  channel are the remaining pieces (chapter 5).
+
 **Not derivable from the code (unknown):** VID/PID, the interface (CDC or HID),
 endpoints and HID report sizes are in no binary; fill these with `lsusb -v` or
 Device Manager. The RFCOMM channel, and whether the Joy exposes BLE after all,
