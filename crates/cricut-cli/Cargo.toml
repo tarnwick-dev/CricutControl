@@ -1,0 +1,19 @@
+[package]
+name = "cricut-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[[bin]]
+name = "cricut"
+path = "src/main.rs"
+
+[dependencies]
+cricut-bridge = { path = "../cricut-bridge" }
+cricut-transport = { path = "../cricut-transport" }
+cricut-proto = { path = "../cricut-proto" }
+clap.workspace = true
+anyhow.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true

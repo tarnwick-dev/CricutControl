@@ -1,0 +1,26 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/cricut-proto",
+    "crates/cricut-bridge",
+    "crates/cricut-transport",
+    "crates/cricut-cli",
+]
+
+[workspace.package]
+version = "0.0.1"
+edition = "2021"
+license = "UNLICENSED"
+publish = false
+repository = "git@github.com:tarnwick-dev/CricutControl.git"
+
+[workspace.dependencies]
+prost = "0.13"
+prost-build = "0.13"
+protox = "0.7"
+bytes = "1"
+thiserror = "2"
+anyhow = "1"
+tracing = "0.1"
+tracing-subscriber = "0.3"
+clap = { version = "4", features = ["derive"] }

@@ -1,0 +1,13 @@
+[package]
+name = "cricut-transport"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+thiserror.workspace = true
+tracing.workspace = true
+# USB/BLE backends worden toegevoegd zodra de transportanalyse de concrete
+# laag (vendor-USB / CDC-serieel / BLE GATT) per machine heeft vastgesteld.
+# Kandidaten: rusb (libusb), serialport, btleplug.

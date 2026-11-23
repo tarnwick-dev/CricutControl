@@ -1,0 +1,18 @@
+// source binary offset 0x390948 length 381
+// extracted statically; file=bridge/proto/bridge.proto
+syntax = "editions";
+// edition=1001
+package bridge.proto;
+import "bridge/proto/NativeModel.Bridge.proto";
+import "bridge/proto/device/message.proto";
+import "bridge/proto/logging/message.proto";
+option java_package = "com.cricut.bridge.proto";
+
+message Message {
+  oneof payload {
+    .NativeModel.Bridge.PBCommonBridge legacy_bridge = 1;
+    .bridge.proto.device.Message device_message = 2;
+    .bridge.proto.logging.Log log_message = 3;
+  }
+}
+

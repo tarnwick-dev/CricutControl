@@ -1,0 +1,23 @@
+// source binary offset 0x38f0a8 length 387
+// extracted statically; file=bridge/proto/device/device.proto
+syntax = "editions";
+// edition=1001
+package bridge.proto.device;
+import "bridge/proto/NativeModel.Bridge.proto";
+option java_package = "com.cricut.bridge.proto.device";
+
+message DeviceHandle {
+  optional int32 value = 1;
+}
+
+message DeviceMetadata {
+}
+
+message Device {
+  optional .bridge.proto.device.DeviceHandle handle = 1;
+  oneof meta {
+    .NativeModel.Bridge.PBCricutDeviceSerialized legacy_model = 2;
+    .bridge.proto.device.DeviceMetadata metadata = 3;
+  }
+}
+

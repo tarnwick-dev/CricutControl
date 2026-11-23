@@ -1,0 +1,26 @@
+// source binary offset 0x39bb90 length 468
+// extracted statically; file=bridge/proto/logging/message.proto
+syntax = "editions";
+// edition=1001
+package bridge.proto.logging;
+import "google/protobuf/timestamp.proto";
+option java_package = "com.cricut.bridge.proto.logging";
+
+enum LogLevel {
+  LOG_LEVEL_UNSPECIFIED = 0;
+  LOG_LEVEL_TRACE = 1;
+  LOG_LEVEL_DEBUG = 2;
+  LOG_LEVEL_INFO = 3;
+  LOG_LEVEL_WARNING = 4;
+  LOG_LEVEL_ERROR = 5;
+  LOG_LEVEL_CRITICAL = 6;
+}
+
+message Log {
+  optional string logger_name = 1;
+  optional .bridge.proto.logging.LogLevel level = 2;
+  optional string message = 3;
+  optional .google.protobuf.Timestamp timestamp = 4;
+  optional uint64 thread_id = 5;
+}
+

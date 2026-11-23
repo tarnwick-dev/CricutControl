@@ -1,0 +1,8 @@
+/target
+**/*.rs.bk
+Cargo.lock.bak
+.DS_Store
+# never commit anything derived from Design Space or captured key material
+/private/
+*.key
+*.keys

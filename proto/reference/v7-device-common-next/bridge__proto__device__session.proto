@@ -1,0 +1,59 @@
+// source binary offset 0x38fc60 length 1444
+// extracted statically; file=bridge/proto/device/session.proto
+syntax = "editions";
+// edition=1001
+package bridge.proto.device;
+import "bridge/proto/device/device.proto";
+option java_package = "com.cricut.bridge.proto.device";
+
+enum SessionOpenResult {
+  SESSION_OPEN_RESULT_UNSPECIFIED = 0;
+  SESSION_OPEN_RESULT_SUCCESS = 1;
+  SESSION_OPEN_RESULT_UNKNOWN_ERROR = 2;
+  SESSION_OPEN_RESULT_ERROR_DEVICE_NOT_FOUND = 3;
+  SESSION_OPEN_RESULT_ERROR_EXISTING_SESSION = 4;
+}
+
+enum SessionCloseResult {
+  SESSION_CLOSE_RESULT_UNSPECIFIED = 0;
+  SESSION_CLOSE_RESULT_SUCCESS = 1;
+  SESSION_CLOSE_RESULT_UNKNOWN_ERROR = 2;
+  SESSION_CLOSE_RESULT_ERROR_DEVICE_NOT_FOUND = 3;
+  SESSION_CLOSE_RESULT_ERROR_NO_SESSION = 4;
+}
+
+enum SessionDataStreamResult {
+  SESSION_DATA_STREAM_RESULT_UNSPECIFIED = 0;
+  SESSION_DATA_STREAM_RESULT_SUCCESS = 1;
+  SESSION_DATA_STREAM_RESULT_ERROR = 2;
+  SESSION_DATA_STREAM_RESULT_ERROR_SESSION_NOT_FOUND = 3;
+}
+
+message SessionOpenRequest {
+  optional .bridge.proto.device.DeviceHandle handle = 1;
+}
+
+message SessionOpenResponse {
+  optional .bridge.proto.device.DeviceHandle handle = 1;
+  optional .bridge.proto.device.SessionOpenResult result = 2;
+}
+
+message SessionCloseRequest {
+  optional .bridge.proto.device.DeviceHandle handle = 1;
+}
+
+message SessionCloseResponse {
+  optional .bridge.proto.device.DeviceHandle handle = 1;
+  optional .bridge.proto.device.SessionCloseResult result = 2;
+}
+
+message SessionDataStreamRequest {
+  optional .bridge.proto.device.DeviceHandle handle = 1;
+  optional bytes data = 2;
+}
+
+message SessionDataStreamResponse {
+  optional .bridge.proto.device.DeviceHandle handle = 1;
+  optional .bridge.proto.device.SessionDataStreamResult result = 2;
+}
+

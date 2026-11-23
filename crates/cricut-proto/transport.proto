@@ -1,0 +1,75 @@
+syntax = "proto3";
+
+// Transport/control-plane berichten tussen de app en de apparaat-helper,
+// gemodelleerd op de statisch herstelde schema's in proto/reference/
+// (bridge/proto/device/*.proto van device-common-next). Dit is onze eigen,
+// naar proto3 vertaalde weergave, geen overgenomen bestand. De rijke
+// NativeModel-commando's (PBDrawVectors enz.) komen later als apart schema.
+package cricut.bridge;
+
+message DeviceHandle {
+  int32 value = 1;
+}
+
+// Ruwe, opaque beschrijving van een apparaat zoals het door de registry gaat.
+message Device {
+  DeviceHandle handle = 1;
+  bytes meta = 2; // serialized legacy model of metadata; nog niet uitgewerkt
+}
+
+enum RegistryAddResult {
+  REGISTRY_ADD_RESULT_UNSPECIFIED = 0;
+  REGISTRY_ADD_RESULT_SUCCESS = 1;
+  REGISTRY_ADD_RESULT_UNKNOWN_ERROR = 2;
+  REGISTRY_ADD_RESULT_ERROR_ALREADY_REGISTERED = 3;
+  REGISTRY_ADD_RESULT_ERROR_INVALID_DEVICE = 4;
+}
+
+enum SessionOpenResult {
+  SESSION_OPEN_RESULT_UNSPECIFIED = 0;
+  SESSION_OPEN_RESULT_SUCCESS = 1;
+  SESSION_OPEN_RESULT_UNKNOWN_ERROR = 2;
+  SESSION_OPEN_RESULT_ERROR_DEVICE_NOT_FOUND = 3;
+  SESSION_OPEN_RESULT_ERROR_EXISTING_SESSION = 4;
+}
+
+enum SessionDataStreamResult {
+  SESSION_DATA_STREAM_RESULT_UNSPECIFIED = 0;
+  SESSION_DATA_STREAM_RESULT_SUCCESS = 1;
+  SESSION_DATA_STREAM_RESULT_ERROR = 2;
+  SESSION_DATA_STREAM_RESULT_ERROR_SESSION_NOT_FOUND = 3;
+}
+
+message RegistryAddRequest { Device device = 1; }
+message RegistryAddResponse { DeviceHandle handle = 1; RegistryAddResult result = 2; }
+message RegistryGetAllRequest {}
+message RegistryGetAllResponse { repeated Device devices = 1; }
+message RegistryRemoveRequest { DeviceHandle handle = 1; }
+message RegistryRemoveResponse { DeviceHandle handle = 1; }
+
+message SessionOpenRequest { DeviceHandle handle = 1; }
+message SessionOpenResponse { DeviceHandle handle = 1; SessionOpenResult result = 2; }
+message SessionCloseRequest { DeviceHandle handle = 1; }
+message SessionCloseResponse { DeviceHandle handle = 1; }
+
+// Het hart van de nieuwere opzet: de app stuurt ruwe apparaat-bytes door de
+// helper naar de machine. Wij bouwen die bytes zelf (zie docs/protocol.md).
+message SessionDataStreamRequest { DeviceHandle handle = 1; bytes data = 2; }
+message SessionDataStreamResponse { DeviceHandle handle = 1; SessionDataStreamResult result = 2; }
+
+message DeviceMessage {
+  oneof payload {
+    RegistryAddRequest registry_add_request = 1;
+    RegistryAddResponse registry_add_response = 2;
+    RegistryRemoveRequest registry_remove_request = 3;
+    RegistryRemoveResponse registry_remove_response = 4;
+    RegistryGetAllRequest registry_get_all_request = 7;
+    RegistryGetAllResponse registry_get_all_response = 8;
+    SessionOpenRequest session_open_request = 9;
+    SessionOpenResponse session_open_response = 10;
+    SessionCloseRequest session_close_request = 11;
+    SessionCloseResponse session_close_response = 12;
+    SessionDataStreamRequest session_data_stream_request = 13;
+    SessionDataStreamResponse session_data_stream_response = 14;
+  }
+}

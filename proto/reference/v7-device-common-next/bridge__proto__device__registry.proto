@@ -1,0 +1,72 @@
+// source binary offset 0x38f4a0 length 1622
+// extracted statically; file=bridge/proto/device/registry.proto
+syntax = "editions";
+// edition=1001
+package bridge.proto.device;
+import "bridge/proto/device/device.proto";
+option java_package = "com.cricut.bridge.proto.device";
+
+enum RegistryAddResult {
+  REGISTRY_ADD_RESULT_UNSPECIFIED = 0;
+  REGISTRY_ADD_RESULT_SUCCESS = 1;
+  REGISTRY_ADD_RESULT_UNKNOWN_ERROR = 2;
+  REGISTRY_ADD_RESULT_ERROR_ALREADY_REGISTERED = 3;
+  REGISTRY_ADD_RESULT_ERROR_INVALID_DEVICE = 4;
+}
+
+enum RegistryUpdateResult {
+  REGISTRY_UPDATE_RESULT_UNSPECIFIED = 0;
+  REGISTRY_UPDATE_RESULT_SUCCESS = 1;
+  REGISTRY_UPDATE_RESULT_UNKNOWN_ERROR = 2;
+  REGISTRY_UPDATE_RESULT_ERROR_NOT_REGISTERED = 3;
+  REGISTRY_UPDATE_RESULT_ERROR_INVALID_DEVICE = 4;
+  REGISTRY_UPDATE_RESULT_ERROR_IDENTITY_MISMATCH = 5;
+}
+
+enum RegistryRemoveResult {
+  REGISTRY_REMOVE_RESULT_UNSPECIFIED = 0;
+  REGISTRY_REMOVE_RESULT_SUCCESS = 1;
+  REGISTRY_REMOVE_RESULT_UNKNOWN_ERROR = 2;
+  REGISTRY_REMOVE_RESULT_ERROR_NOT_REGISTERED = 3;
+}
+
+message RegistryAddRequest {
+  optional .bridge.proto.device.Device device = 1;
+}
+
+message RegistryAddResponse {
+  optional .bridge.proto.device.DeviceHandle handle = 1;
+  optional .bridge.proto.device.RegistryAddResult result = 2;
+}
+
+message RegistryUpdateRequest {
+  optional .bridge.proto.device.Device device = 1;
+}
+
+message RegistryUpdateResponse {
+  optional .bridge.proto.device.DeviceHandle handle = 1;
+  optional .bridge.proto.device.RegistryUpdateResult result = 2;
+}
+
+message RegistryRemoveRequest {
+  optional .bridge.proto.device.DeviceHandle handle = 1;
+}
+
+message RegistryRemoveResponse {
+  optional .bridge.proto.device.DeviceHandle handle = 1;
+  optional .bridge.proto.device.RegistryRemoveResult result = 2;
+}
+
+message RegistryRemoveAllRequest {
+}
+
+message RegistryRemoveAllResponse {
+}
+
+message RegistryGetAllRequest {
+}
+
+message RegistryGetAllResponse {
+  repeated .bridge.proto.device.Device devices = 1;
+}
+

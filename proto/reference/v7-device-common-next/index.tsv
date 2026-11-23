@@ -1,0 +1,17 @@
+file_offset	length	name	messages	enums
+0x386240	31785	bridge/proto/NativeModel.Bridge.proto	63	5
+0x38f0a8	387	bridge/proto/device/device.proto	3	0
+0x38f4a0	1622	bridge/proto/device/registry.proto	10	3
+0x38fc60	1444	bridge/proto/device/session.proto	6	3
+0x390318	1475	bridge/proto/device/message.proto	1	0
+0x390948	381	bridge/proto/bridge.proto	1	0
+0x390ca0	14686	bridge/proto/NativeModel.Machines.proto	18	6
+0x396010	3171	bridge/proto/NativeModel.Devices.proto	13	0
+0x3972d0	14629	bridge/proto/NativeModel.Commands.proto	28	8
+0x39b7e8	584	bridge/proto/NativeModel.Learning.proto	3	1
+0x39bb90	468	bridge/proto/logging/message.proto	1	1
+0x39c080	14730	bridge/proto/NativeModel.BridgeEnums.proto	0	12
+0x39fc20	1708	bridge/proto/NativeModel.Analytics.proto	2	0
+0x3a03c0	706	bridge/proto/NativeModel.CustomerTheta.proto	1	0
+0x3a0e78	7167	bridge/proto/NativeModel.Force.proto	17	5
+0x3a30f0	1799	bridge/proto/NativeModel.Backlash.proto	3	1
