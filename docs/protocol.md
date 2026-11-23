@@ -44,6 +44,16 @@ itself, through an encryption step. So there is **no plaintext cut path** for
 these machines: the encrypted session is required to make them move and cut. The
 encryption part (chapter 5) is therefore on the critical path, not a side issue.
 
+**No cloud at cut time (code, JS side).** For our four machines the app makes no
+per-cut server call that the machine needs: no server-converted job data, no
+per-session key fetched from Cricut. There is a lock check
+(`/machine/v2/Machines/machineinfo/{serial}`) that only blocks when the server
+explicitly returns "locked" or 403; offline or on any other error the app
+continues with a placeholder machine id. The per-session server handshake key
+that does exist applies to other models (Joy 2, Joy Xtra 2, Maker 5, Explore 5,
+Scout), **not** to our Joy or Joy Xtra. So local control is feasible; the one
+remaining unknown is the machine-link encryption (chapter 5).
+
 ---
 
 ## 2. Transport (USB and Bluetooth)
@@ -166,6 +176,52 @@ tool-down and pressure are separate commands next to the motion)
 
 ---
 
+### Cut flow (code, JS side)
+
+Maker and Joy use the same message sequence between "Make" and the finished cut
+(Joy is Bluetooth-only, single-head, matless by default):
+
+1. Feature flags and log level, then a start-session message carrying the user
+   settings as `authData` and the selected device.
+2. The helper reports connected devices; the app selects one.
+3. The helper asks for a machine summary; the app answers (after its server
+   checks, which are soft, see chapter 1).
+4. The device opens.
+5. Material selection (mat size, mode, margins).
+6. The helper reads the pressure table from the machine.
+7. The tool list, with pressure, passes and speeds per tool.
+8. The path data.
+9. Load, Go, progress, tool-change, pause, unload, complete. Cancel is a
+   close-session message; there are virtual Load/Go/Pause buttons.
+
+### Design data format (code, JS side)
+
+The design leaves the JS as **SVG path strings in points (72 per inch)**, with a
+transform per layer and sizes in inches. No machine units or machine commands
+leave the JS; the native helper converts paths to the motion stream. By default
+the paths are encrypted locally (by `CricutPathOperation.exe`); a feature flag
+sends them in plain text and the helper accepts both. For us this is convenient:
+we control the vector data and feed paths, not pre-encoded machine commands.
+
+### App-to-helper channel (reference, not the machine link)
+
+Separate from the machine-link encryption, the app encrypts the channel to the
+helper:
+
+- **v6:** stdin/stdout, 4-byte LE length + `PBCommonBridge`; requests
+  AES-256-ECB (zero padding), replies plain. The key derives from a server value
+  in the user settings, masked with SHA-512 of user id + app name/version, XORed
+  with a 64-byte salt in `main.js` (**inferred** that the helper holds a matching
+  constant).
+- **v7:** named pipe, `BRDG` header + ChaCha20-Poly1305; a random 32-byte
+  session key is handed to the helper in the env var `CRICUT_BRIDGE_MESSAGE_KEY`.
+  No server input.
+
+Because we replace the helper, we do not need this channel; it only matters if
+we ever emulate the helper instead. `config.bin` is a dead end: AES-256-CBC with
+a key derived from an embedded string, and it only holds a build manifest
+(environment, version, git commit), no device keys.
+
 ## 5. Encryption (you fill this in)
 
 This chapter is deliberately not worked out here. The encryption of the
@@ -223,3 +279,12 @@ traffic with USBPcap or a BLE sniffer) we want to record:
 
 Points 3 and 4 are the core. Once those exist, `cricut-bridge` can send a real
 cut.
+
+**The single open feasibility question.** Both the JS side and the native side
+point to the same unknown: what the native helper does with the user-settings
+`authData`, and whether any of it feeds the machine-link encryption key, or
+whether that key is a constant inside the helper. If it is a constant (or
+derivable locally), local control needs no account at all. If the machine-link
+key is seeded from a server-provided settings value, you need to have signed in
+once so that value is cached. A capture of the handshake (point 3) answers this
+directly.
