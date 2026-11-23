@@ -9,6 +9,8 @@ pub mod bridge {
 }
 
 pub mod commands;
+pub mod wire;
 
 pub use bridge::{device_message, Device, DeviceHandle, DeviceMessage};
 pub use commands::Opcode;
+pub use wire::{encode_draw_vectors, CutVectorType, DrawRecord};

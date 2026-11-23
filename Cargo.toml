@@ -2,6 +2,7 @@
 resolver = "2"
 members = [
     "crates/cricut-proto",
+    "crates/cricut-design",
     "crates/cricut-bridge",
     "crates/cricut-transport",
     "crates/cricut-cli",

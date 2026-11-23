@@ -11,6 +11,7 @@ path = "src/main.rs"
 
 [dependencies]
 cricut-bridge = { path = "../cricut-bridge" }
+cricut-design = { path = "../cricut-design" }
 cricut-transport = { path = "../cricut-transport" }
 cricut-proto = { path = "../cricut-proto" }
 clap.workspace = true

@@ -10,6 +10,7 @@
 
 pub mod cipher;
 pub mod codec;
+pub mod cut;
 pub mod session;
 
 pub use cipher::{JoyXtraCipher, JoyXtraKeyExchange, KeyExchange, NullCipher, SessionCipher, SessionKey};

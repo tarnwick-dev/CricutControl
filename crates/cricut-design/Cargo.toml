@@ -1,0 +1,10 @@
+[package]
+name = "cricut-design"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+thiserror.workspace = true
+kurbo = "0.11"
