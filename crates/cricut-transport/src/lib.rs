@@ -8,6 +8,11 @@
 
 use std::time::Duration;
 
+#[cfg(target_os = "linux")]
+pub mod linux_rfcomm;
+#[cfg(target_os = "linux")]
+pub use linux_rfcomm::RfcommTransport;
+
 #[derive(Debug, thiserror::Error)]
 pub enum TransportError {
     #[error("no device found")]

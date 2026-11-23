@@ -8,4 +8,7 @@ pub mod bridge {
     include!(concat!(env!("OUT_DIR"), "/cricut.bridge.rs"));
 }
 
+pub mod commands;
+
 pub use bridge::{device_message, Device, DeviceHandle, DeviceMessage};
+pub use commands::Opcode;

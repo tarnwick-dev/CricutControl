@@ -6,10 +6,15 @@ hardware you own. See `docs/legal.md` for scope.
 
 ## Status
 
-Early. Skeleton plus protocol documentation. The machine layer is not finished:
-the encrypted part of the handshake to the machine is filled in by hand from a
-capture of your own machine (see `docs/protocol.md`, chapter Encryption). This
-repository deliberately contains no keys and no code taken from Design Space.
+The stack is in place and builds: the SPP frame codec, a Linux RFCOMM transport
+(classic Bluetooth, channel 4), the session (open phase, key-exchange hook,
+encrypted phase) and the command opcodes. The one slot left is the session
+cipher — see `DEVELOPER.md`. Everything works today with `NullCipher` for the
+plaintext open phase.
+
+This repository deliberately contains no keys, no unwrap seed, no materials
+string, no captures, and no code taken from Design Space. Key material is loaded
+at runtime from outside version control.
 
 ## Layout
 

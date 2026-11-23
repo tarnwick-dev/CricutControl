@@ -8,6 +8,6 @@ publish = false
 [dependencies]
 thiserror.workspace = true
 tracing.workspace = true
-# USB/BLE backends worden toegevoegd zodra de transportanalyse de concrete
-# laag (vendor-USB / CDC-serieel / BLE GATT) per machine heeft vastgesteld.
-# Kandidaten: rusb (libusb), serialport, btleplug.
+
+[target.'cfg(target_os = "linux")'.dependencies]
+libc = "0.2"

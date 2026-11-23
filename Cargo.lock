@@ -176,6 +176,7 @@ dependencies = [
 name = "cricut-transport"
 version = "0.0.1"
 dependencies = [
+ "libc",
  "thiserror 2.0.21",
  "tracing",
 ]
