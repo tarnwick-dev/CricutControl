@@ -85,6 +85,14 @@ Per machine:
   is driven over RFCOMM channel 4; pairing and the encrypted session on that
   channel are the remaining pieces (chapter 5).
 
+  Confirmed on real hardware by capturing a cut (HCI capture, dissected to
+  RFCOMM): the session is L2CAP -> SDP (find Serial Port) -> RFCOMM channel 4
+  (DLCI 0x08), then the Cricut SPP protocol. The SPP framing matches the
+  Maker-family scheme below: a 2-byte big-endian header where the top bit is an
+  encrypted flag and the low 15 bits are the body length, a plaintext setup
+  phase, then 16-byte encrypted blocks. This framing was not previously
+  documented for the Joy Xtra.
+
 **Not derivable from the code (unknown):** VID/PID, the interface (CDC or HID),
 endpoints and HID report sizes are in no binary; fill these with `lsusb -v` or
 Device Manager. The RFCOMM channel, and whether the Joy exposes BLE after all,
