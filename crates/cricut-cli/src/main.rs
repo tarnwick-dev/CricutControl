@@ -1,9 +1,9 @@
-//! `cricut` — commandoregel voor de eigen aansturing.
+//! `cricut` — command line for the independent control software.
 
 use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
-#[command(name = "cricut", version, about = "Eigen aansturing van onze Cricut-machines")]
+#[command(name = "cricut", version, about = "Independent control for Cricut machines")]
 struct Cli {
     #[command(subcommand)]
     command: Command,
@@ -11,9 +11,9 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Command {
-    /// Aangesloten machines zoeken (USB en Bluetooth).
+    /// Scan for attached machines (USB and Bluetooth).
     Scan,
-    /// Status van een machine opvragen.
+    /// Query the status of a machine.
     Status,
 }
 
@@ -22,12 +22,12 @@ fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
     match cli.command {
         Command::Scan => {
-            // Wacht op de transportlaag: dan wordt hier een DeviceScanner
-            // aangeroepen en de gevonden machines afgedrukt.
-            println!("scan: transportlaag nog niet ingevuld");
+            // Waiting on the transport layer: a DeviceScanner will be called
+            // here and the machines found will be printed.
+            println!("scan: transport layer not implemented yet");
         }
         Command::Status => {
-            println!("status: nog niet ingevuld");
+            println!("status: not implemented yet");
         }
     }
     Ok(())

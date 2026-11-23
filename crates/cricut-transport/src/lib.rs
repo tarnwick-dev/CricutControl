@@ -1,33 +1,33 @@
-//! Transportlaag: een apparaat vinden, openen en bytes uitwisselen.
+//! Transport layer: find a device, open it and exchange bytes.
 //!
-//! Alles achter [`DeviceTransport`] staat los van het soort verbinding (USB of
-//! Bluetooth), zodat de bridge- en commandologica er niets van merkt. De
-//! concrete backends (USB-vendor/CDC, BLE GATT) worden ingevuld zodra de
-//! transportanalyse de VID/PID's, endpoints en UUID's per machine heeft
-//! bevestigd. Tot die tijd is dit alleen de vorm.
+//! Everything behind [`DeviceTransport`] is independent of the kind of
+//! connection (USB or Bluetooth), so the bridge and command logic does not need
+//! to know about it. The concrete backends (USB vendor/CDC, BLE GATT) are
+//! filled in once the transport analysis has confirmed the VID/PIDs, endpoints
+//! and UUIDs per machine. Until then this is only the shape.
 
 use std::time::Duration;
 
 #[derive(Debug, thiserror::Error)]
 pub enum TransportError {
-    #[error("geen apparaat gevonden")]
+    #[error("no device found")]
     NotFound,
-    #[error("verbinding verbroken")]
+    #[error("connection lost")]
     Disconnected,
-    #[error("time-out na {0:?}")]
+    #[error("timed out after {0:?}")]
     Timeout(Duration),
     #[error("i/o: {0}")]
     Io(String),
-    #[error("nog niet ge\u{00ef}mplementeerd: {0}")]
+    #[error("not implemented yet: {0}")]
     Unimplemented(&'static str),
 }
 
-/// Hoe een machine fysiek hangt. Bepaalt welke backend hem opent.
+/// How a machine is physically attached. Determines which backend opens it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Link {
-    /// USB als virtuele seriële poort (CDC-ACM).
+    /// USB as a virtual serial port (CDC-ACM).
     UsbSerial,
-    /// USB met een vendor/WinUSB-interface (bulk endpoints).
+    /// USB with a vendor/WinUSB interface (bulk endpoints).
     UsbVendor,
     /// Bluetooth classic, SPP/RFCOMM.
     BluetoothSpp,
@@ -35,9 +35,9 @@ pub enum Link {
     Ble,
 }
 
-/// Wat er nodig is om één machine te herkennen en te openen. De concrete
-/// waarden (VID/PID, endpoints, service/characteristic-UUID's) vult de
-/// transportanalyse in; hier staat alleen welke velden dat zijn.
+/// What is needed to recognise and open one machine. The concrete values
+/// (VID/PID, endpoints, service/characteristic UUIDs) are filled in by the
+/// transport analysis; this only states which fields those are.
 #[derive(Debug, Clone)]
 pub struct DeviceDescriptor {
     pub link: Link,
@@ -47,16 +47,16 @@ pub struct DeviceDescriptor {
     pub label: String,
 }
 
-/// Een geopende, ruwe byte-verbinding met één machine. Hierop zet
-/// `cricut-bridge` de sessie- en commandologica.
+/// An open, raw byte connection to one machine. On top of this
+/// `cricut-bridge` builds the session and command logic.
 pub trait DeviceTransport: Send {
-    /// Schrijf een ruw frame richting de machine.
+    /// Write a raw frame towards the machine.
     fn write(&mut self, bytes: &[u8]) -> Result<usize, TransportError>;
-    /// Lees ruwe bytes van de machine (tot `buf.len()`), met time-out.
+    /// Read raw bytes from the machine (up to `buf.len()`), with a timeout.
     fn read(&mut self, buf: &mut [u8], timeout: Duration) -> Result<usize, TransportError>;
 }
 
-/// Zoekt naar aangesloten machines. Per backend één implementatie.
+/// Scans for attached machines. One implementation per backend.
 pub trait DeviceScanner {
     fn scan(&self) -> Result<Vec<DeviceDescriptor>, TransportError>;
     fn open(&self, dev: &DeviceDescriptor) -> Result<Box<dyn DeviceTransport>, TransportError>;

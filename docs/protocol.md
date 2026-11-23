@@ -1,177 +1,225 @@
-# Protocol: hoe we de machines aansturen
+# Protocol: how we drive the machines
 
-Dit is het naslagdocument. Het beschrijft hoe een Cricut-machine bestuurd wordt,
-voor zover we dat uit de statische analyse weten, en het markeert precies waar
-de kennis ophoudt en een opname van onze eigen machine nodig is. Het deel dat
-jij zelf invult (de versleuteling) staat in het hoofdstuk Versleuteling.
+This is the reference document. It describes how a Cricut machine is controlled,
+as far as we know from static analysis, and it marks exactly where that
+knowledge stops and a capture of your own machine is needed. The part you fill
+in yourself (the encryption) is in the Encryption chapter.
 
-Bron: statische analyse van Design Space 10.12.122, in `~/work/cricut-re/`.
-Markering per bewering: **(code)** = gezien in de binaries/schema's,
-**(afgeleid)** = redenering, **(onbekend)** = nog niet vastgesteld.
+Source: static analysis of Design Space 10.12.122. Tag per claim: **(code)** =
+seen in the binaries/schemas, **(inferred)** = reasoning, **(unknown)** = not
+yet established.
 
-> Status van dit document: de hoofdstukken Keten, Commandomodel, Versleuteling
-> en Opname staan. De hoofdstukken Transport en Machinecodenamen worden
-> ingevuld zodra de transportanalyse klaar is (`~/work/cricut-re/notes/
-> native-transport.md`).
+> Status: Chain, Transport, Machine code names, Command model, Encryption and
+> Capture are filled in from the static analysis. The byte layout of the
+> commands and the encryption itself come from a capture (see chapter 6).
 
 ---
 
-## 1. De keten
+## 1. The chain
 
-De machine hangt aan de computer via USB of Bluetooth. Design Space praat niet
-rechtstreeks met de machine, maar via een hulpproces. Wij nemen dat hulpproces
-over.
+The machine connects to the computer over USB or Bluetooth. Design Space does
+not talk to the machine directly but through a helper process. We take over that
+helper.
 
 ```
-onze software ── USB/Bluetooth ── machine
+our software ── USB/Bluetooth ── machine
 ```
 
-Twee generaties in Design Space (**code**, zie `docs/architectuur.md`):
+Two generations in Design Space (**code**, see `docs/architecture.md`):
 
-- **v6 (device-common):** de app stuurt gestructureerde commando's
-  (`NativeModel.*`), de helper zet ze om naar de lijn.
-- **v7 (device-common-next) + cricut-device-io:** de app bouwt de machine-bytes
-  zelf en stuurt ze als ruwe stroom (`SessionDataStreamRequest { handle, bytes
-  data }`). De helper vindt en opent het apparaat en geeft bytes door.
+- **v6 (device-common):** the app sends structured commands (`NativeModel.*`),
+  the helper converts them to the wire.
+- **v7 (device-common-next) + cricut-device-io:** the app builds the machine
+  bytes itself and sends them as a raw stream (`SessionDataStreamRequest {
+  handle, bytes data }`). The helper finds and opens the device and passes bytes
+  through.
 
-Voor ons is de v7-opzet het model: wij bouwen de bytes, het transport geeft ze
-door. De `NativeModel`-schema's blijven de beste beschrijving van wát er
-bestuurd wordt.
+For us the v7 design is the model: we build the bytes, the transport passes them
+on. The `NativeModel` schemas remain the best description of *what* is driven.
 
----
-
-## 2. Transport (USB en Bluetooth)
-
-> Wordt ingevuld uit `native-transport.md`. Hier komen per machine:
-> USB-klasse (CDC-serieel / vendor-WinUSB / HID), VID en PID, endpoints en
-> pakketgroottes; Bluetooth classic (RFCOMM-kanaal) of BLE (service- en
-> characteristic-UUID's); en welke helper welk apparaat opent.
-
-Wat publieke bronnen (onbevestigd) zeggen, als vertrekpunt om te toetsen:
-
-- **Maker (v1, "Athena")**: USB CDC-serieel, claim VID `0x20D3` PID `0x0015`,
-  bulk OUT `0x02` / IN `0x82`; Bluetooth classic SPP/RFCOMM. **(onbekend tot
-  getoetst)**
-- **Joy, Joy Xtra, Maker 3**: niets publiek bekend. BLE waarschijnlijk, maar
-  UUID's, VID/PID en crypto onbekend. Dit is waar onze analyse nieuw terrein is.
+**Key feasibility finding (code):** all four machines this project targets
+(Maker, Maker 3, Joy, Joy Xtra) share one command set and encrypt the entire
+command stream. The send function passes every command, except the key exchange
+itself, through an encryption step. So there is **no plaintext cut path** for
+these machines: the encrypted session is required to make them move and cut. The
+encryption part (chapter 5) is therefore on the critical path, not a side issue.
 
 ---
 
-## 3. Machinecodenamen
+## 2. Transport (USB and Bluetooth)
 
-Design Space gebruikt interne codenamen (`PBMachineType` in
-`NativeModel.Machines.proto`) **(code)**. Bevestigd: `ATHENA_MT = 11` = Maker
-(v1). De overige codenamen voor onze machines (Joy, Joy Xtra, Maker 3) worden
-uit de app-strings gekoppeld voordat ze hier als waarheid komen te staan.
-Kandidaten in de enum, nog **niet** hard gekoppeld: `CUPID`, `SPRITE`, `SCOUT`,
-`RANGER`, `MORPHEUS`, `NEWT`, `RIDDLE`, `GANDALF`. **(onbekend tot getoetst)**
+The helper opens the machine itself, in-process (not through a separate driver).
+For the serial path, libusbp looks up the COM port via the registry (`PortName`)
+and opens it with `CreateFileA("\\.\COMn")` plus `SetCommTimeouts` **(code)**.
+For Bluetooth it uses WinRT: `BluetoothDevice`, `RfcommServiceId`, `StreamSocket`
+**(code)**.
 
-Volledige enum: `proto/reference/v7-device-common-next/
-bridge__proto__NativeModel.Machines.proto`.
+Per machine:
+
+- **Maker ("Athena") and Maker 3 ("Scamander")**: USB as a virtual COM port
+  (CDC) **(code)**, or Bluetooth classic SPP over RFCOMM. The RFCOMM channel
+  comes from SDP at runtime, not from a constant; v7 answers the pairing request
+  with a fixed 4-character PIN **(code)**. No BLE.
+- **Joy ("Cupid") and Joy Xtra ("CupidXL", family MARS)**: marked
+  **Bluetooth-only** in the family table **(code)**, so classic SPP/RFCOMM, no
+  USB path. BLE exists in Design Space only in `cricut-device-io` for the
+  Bifrost generation; no BLE UUIDs were found for our four machines.
+
+**Not derivable from the code (unknown):** VID/PID, the interface (CDC or HID),
+endpoints and HID report sizes are in no binary; fill these with `lsusb -v` or
+Device Manager. The RFCOMM channel, and whether the Joy exposes BLE after all,
+come from an SDP browse and a GATT listing of your own machine.
+
+**Which helper (code):** all four are `communicationType CNV2` and go through
+`device-common` (v6) or `device-common-next` (v7), selected by the flag
+`DH_MACHINES_USE_BRIDGE_NEXT`. Not through `cricut-device-io` (that is for the
+Bifrost/ODM generation) and not through `vulcan` (the AutoPress heat press).
+
+### Helper IPC (for reference, if we ever emulate the helper)
+
+- **v7 (device-common-next):** Electron opens a named pipe
+  `\\.\pipe\cricut-bridge-<uuid>` and launches the helper with `--pipe <path>`.
+  Frame: a 14-byte header (`BRDG`, version 1, flags, payload length u32 LE,
+  CRC-32C u32 LE) plus a `bridge.proto.Message` **(code)**.
+- **v6 (device-common):** stdio, launched with `--new-comm-lib`, u32 LE length;
+  payload encrypted in Electron.
+- **cricut-device-io:** stdio, u32 LE length plus a
+  `cricut.device_io.cli.Message` **(code)**. (Not for our machines.)
 
 ---
 
-## 4. Commandomodel
+## 3. Machine code names
 
-Uit `NativeModel.Commands.proto` en `NativeModel.Machines.proto` **(code)**. Dit
-is de woordenschat van wat je een machine laat doen. De exacte byte-codering op
-de lijn (opcodes, volgorde) komt uit de transportanalyse en een opname; hier
-staat de betekenis.
+Design Space uses internal code names (`PBMachineType` in
+`NativeModel.Machines.proto`) **(code)**. Mapping to retail names, from name
+prefixes, family images and flag text:
 
-**Beweging**
-- `PBDrawVectors` / `PBDrawVector`: de eigenlijke snede/teken-beweging, als
-  reeks vectoren. `PBDrawVectorType` geeft het type lijnstuk. De coördinaten en
-  eenheid (publieke claim: float32 X/Y in inches) toetsen we op een opname.
-- `PBSpeedValues`, `PBSpeedGroup`: snelheid.
+| Code name     | Retail name   | Basis        |
+|---------------|---------------|--------------|
+| ATHENA        | Maker         | observed     |
+| SCAMANDER     | Maker 3       | observed     |
+| CUPID         | Joy           | observed     |
+| CUPIDXL (MARS)| Joy Xtra      | observed     |
+| VOLDEMORT     | Explore 3     | observed     |
+| MORPHEUS      | Venture       | observed     |
+| DUMBLEDORE    | Maker 5       | observed     |
+| GANDALF       | Explore 5     | observed     |
+| PSYCHE        | Joy 2         | observed     |
+| EROS          | Joy Xtra 2    | observed     |
+| NEWT          | Maker 4       | inferred (image filenames) |
+| RIDDLE        | Explore 4     | inferred (image filenames) |
 
-**Gereedschap en druk** (dit verklaart "het mes beweegt maar snijdt niet":
-tool-neer en druk zijn aparte commando's naast de beweging)
-- `PBToolType` (**code**, volledige lijst): `ROLLING_BLADE`, `DRAG_KNIFE`,
+`SPRITE`, `RANGER`, `TITAN`, `VOYAGER`, `ZEUS`: present in the enum, no retail
+mapping found (unknown). Full enum:
+`proto/reference/v7-device-common-next/bridge__proto__NativeModel.Machines.proto`.
+
+---
+
+## 4. Command model
+
+From `NativeModel.Commands.proto` and `NativeModel.Machines.proto` **(code)**.
+This is the vocabulary of what you make a machine do. The exact byte encoding on
+the wire comes from a capture; here is the meaning.
+
+Each command object exposes its opcode byte via a vtable slot **(code)**; the
+table is the same in v6 and v7. Observed opcodes include: `SetMachineState`
+`0x30`, `Move4D` `0xF1`, `DrawVectorFloat` `0x42`, `LoadMat` `0x84`. The sender
+passes every command except the AES handshake ids through the encryption step,
+so the plaintext bodies are not visible statically.
+
+**Motion**
+- `PBDrawVectors` / `PBDrawVector`: the actual cut/draw motion, as a sequence of
+  vectors. `PBDrawVectorType` gives the segment type. Coordinates and unit
+  (public claim: float32 X/Y in inches) to be confirmed on a capture.
+- `PBSpeedValues`, `PBSpeedGroup`: speed.
+
+**Tool and pressure** (this explains "the blade moves but does not cut":
+tool-down and pressure are separate commands next to the motion)
+- `PBToolType` (**code**, full list): `ROLLING_BLADE`, `DRAG_KNIFE`,
   `TANGENTIAL_BLADE`, `PEN_DT`, `STYLUS`, `SCORING_WHEEL`, `PERFORATION_WHEEL`,
   `DEBOSSING_TOOL`, `WAVE_TOOL`, `ENGRAVE_TOOL`, `MIDAS_*`, `DEEP_CUT`,
   `AUTO_CUTOFF_TOOL`, `SCORE_TIP_TOOL`, `ENGRAVE_STATIC_TOOL`.
 - `PBToolSetting`, `PBToolSettings`, `PBToolTypeState`.
-- Kracht/druk: `NativeModel.Force.proto`. Speling: `NativeModel.Backlash.proto`.
-- Kop: `PBHeadType` (`CLAMP_A`, `CLAMP_B`), `PBAvailableHeadType`.
+- Force/pressure: `NativeModel.Force.proto`. Backlash: `NativeModel.Backlash.proto`.
+- Head: `PBHeadType` (`CLAMP_A`, `CLAMP_B`), `PBAvailableHeadType`.
 
-**Machinestatus en besturing**
+**Machine state and control**
 - `PBSetMachineState`, `PBMachineInterface`, `PBMachineInterfaceState`.
 - `PBGetFullStatus`, `PBMachineInformationBridge`, `PBSerialNumber`.
-- `PBReadEdgeSensorCommand` / `PBSensorResult` (`PBSensorType`): mat- en
-  materiaalsensoren.
-- `PBMatloadOptions`: mat laden/lossen.
-- `PBSimulateButton` (`PBDeviceButton`), `PBDeviceLEDState`: knoppen en lampjes.
-- `PBAck`: bevestiging per commando (**afgeleid**: elk commando wordt geACKt).
-- `PBActivateDeactivateCommand`: dit is de "machine locked/geactiveerd"-controle.
-  **(afgeleid)** Dit is waarschijnlijk een entitlement-check van de app, geen
-  voorwaarde voor beweging. Toetsen op een opname.
-- `PBRawCommandRequestResponse`: ruwe passthrough, handig voor experimenteren.
+- `PBReadEdgeSensorCommand` / `PBSensorResult` (`PBSensorType`): mat and material
+  sensors.
+- `PBMatloadOptions`: load/unload the mat.
+- `PBSimulateButton` (`PBDeviceButton`), `PBDeviceLEDState`: buttons and LEDs.
+- `PBAck`: acknowledgement per command (**inferred**: each command is ACKed).
+- `PBActivateDeactivateCommand`: the "machine locked/activated" check.
+  **(inferred)** This is probably an entitlement check in the app, not a
+  precondition for motion. To be confirmed on a capture.
+- `PBRawCommandRequestResponse`: raw passthrough, useful for experimenting.
 
-**Materiaal**
+**Material**
 - `PBAllMaterialSettings`, `PBMaterialSettingsApi`, `PBMachineMaterial`,
   `PBMaterialTag(s)`, `PBMatSize`, `PBMaterialInset`, `PBMachineMode`.
-- **(afgeleid, publieke claim)** materiaalinstellingen (druk, snelheid, aantal
-  passes per materiaal) komen uit een online bron van Cricut en worden gecachet
-  in het profiel. Voor ons: we kunnen eigen materiaalprofielen maken; we hebben
-  Cricuts tabel niet nodig om te bewegen. Toetsen wat de machine echt als input
-  eist.
+- **(inferred, public claim)** material settings (pressure, speed, passes per
+  material) come from a Cricut online source and are cached in the profile. For
+  us: we can make our own material profiles; we do not need Cricut's table to
+  move. Confirm what the machine really requires as input.
 
 ---
 
-## 5. Versleuteling (dit vul jij in)
+## 5. Encryption (you fill this in)
 
-Dit hoofdstuk is bewust niet door mij uitgewerkt. De versleuteling van de
-verbinding met de machine is zowel het filterpunt (het cyberfilter blokkeert het
-decompileren ervan) als het juridisch gevoelige punt (zie `docs/juridisch.md`).
-Deze repo bevat geen sleutels en geen uit Design Space overgenomen cryptocode.
+This chapter is deliberately not worked out here. The encryption of the
+connection to the machine is both the blocking point for automated analysis and
+the legally sensitive point (see `docs/legal.md`). This repository contains no
+keys and no cryptography code taken from Design Space.
 
-Wat we er in grote lijnen van weten, puur als kader (**afgeleid uit publieke
-bronnen, onbevestigd**):
+What we know in outline, purely as a frame (**inferred from public sources,
+unconfirmed**):
 
-- De verbinding kent een **open fase** (status lezen, registers, apparaat
-  opstarten) en daarna een **versleutelde fase** voor beweging en snijden.
-- De overgang is een **sleuteluitwisseling**: de software stuurt een frame, de
-  machine antwoordt, en daaruit volgt een sessiesleutel die per verbinding
-  verschilt.
-- Publieke projecten gebruiken hiervoor sleutelmateriaal dat in Cricuts software
-  zit. Dat materiaal overnemen is precies de rode lijn. Voor eigen machines is
-  de nette weg: de **handshake van je eigen machine opnemen** en het algoritme
-  zelf implementeren op basis van wat je in die opname ziet, zonder Cricuts
-  sleuteltabellen te kopiëren.
+- The connection has an **open phase** (reading status, registers, starting the
+  device) and then an **encrypted phase** for motion and cutting.
+- The transition is a **key exchange**: the software sends a frame, the machine
+  replies, and from that follows a session key that differs per connection.
+- Public projects use key material that sits inside Cricut's software for this.
+  Copying that material is exactly the line. For machines you own, the clean way
+  is to **capture the handshake of your own machine** and implement the
+  algorithm yourself from what you see in that capture, without copying Cricut's
+  key tables.
 
-In de code sluit dit aan op `cricut-bridge`:
+In the code this attaches to `cricut-bridge`:
 
-- `FrameCodec`: de framing (lengte-header, byte-orde, checksum) rond elk bericht.
-- `SessionCipher`: de versleutellaag. `NullCipher` is er al voor de open fase en
-  voor replay-tests op een opname. Jouw implementatie komt hierachter, met
-  sleutelmateriaal dat **buiten de repo** blijft (zie `.gitignore`: `*.key`,
-  `/private/`).
+- `FrameCodec`: the framing (length header, byte order, checksum) around each
+  message.
+- `SessionCipher`: the encryption layer. `NullCipher` already exists for the
+  open phase and for replay tests on a capture. Your implementation goes behind
+  it, with key material that stays **outside the repo** (see `.gitignore`:
+  `*.key`, `/private/`).
 
-De bouwstenen die je waarschijnlijk nodig hebt (AES, en afhankelijk van de
-opname een sleuteluitwisseling) zijn gewone Rust-crates (`aes`, `cipher`, en
-voor een eventuele uitwisseling `x25519-dalek` of wat de opname laat zien). Die
-keuze hangt af van wat je in de handshake van onze eigen machine ziet.
+The building blocks you will likely need (AES, and depending on the capture a
+key exchange) are ordinary Rust crates (`aes`, `cipher`, and for a possible
+exchange `x25519-dalek` or whatever the capture shows). That choice depends on
+what you see in the handshake of your own machine.
 
 ---
 
-## 6. Wat een opname van onze eigen machine nog moet opleveren
+## 6. What a capture of your own machine still has to provide
 
-Statische analyse zegt niet wat er echt over de lijn gaat. Met een machine aan
-een computer waar je bij kunt (een pc met Design Space, verkeer opnemen met
-USBPcap of een BLE-sniffer) willen we vastleggen:
+Static analysis does not tell you what actually goes over the wire. With a
+machine attached to a computer you can access (a PC with Design Space, capturing
+traffic with USBPcap or a BLE sniffer) we want to record:
 
-1. **Transport bevestigen**: welke USB-klasse of welk BLE-profiel, VID/PID of
-   UUID's, endpoints. Per machine (Maker en Joy verschillen vrijwel zeker).
-2. **De open fase**: de exacte bytes van opstart, status, registers, tot aan de
-   sleuteluitwisseling. Dit kunnen we direct namaken.
-3. **De sleuteluitwisseling**: de frames van de handshake, zodat jij het
-   algoritme kunt implementeren zonder Cricuts sleutels te kopiëren.
-4. **Een echte snede**: de volgorde van commando's tussen "Make" en klaar
-   (beweging, tool-neer, druk, mat laden, voortgang, pauze/stop), en de
-   bytecodering van `PBDrawVector` (eenheid, stapgrootte, lijn versus curve).
-5. **Of de cloud nodig is op snijmoment**: meekijken of er tussen "Make" en de
-   beweging een serververzoek zit dat de machine echt nodig heeft, of dat het
-   alleen telemetrie/entitlement is.
+1. **Confirm the transport**: which USB class or which BLE profile, VID/PID or
+   UUIDs, endpoints. Per machine (Maker and Joy almost certainly differ).
+2. **The open phase**: the exact bytes of startup, status, registers, up to the
+   key exchange. We can reproduce this directly.
+3. **The key exchange**: the handshake frames, so you can implement the
+   algorithm without copying Cricut's keys.
+4. **A real cut**: the order of commands between "Make" and done (motion,
+   tool-down, pressure, mat load, progress, pause/cancel), and the byte encoding
+   of `PBDrawVector` (unit, step size, line vs curve).
+5. **Whether the cloud is needed at cut time**: watching whether there is a
+   server request between "Make" and the motion that the machine actually needs,
+   or whether it is only telemetry/entitlement.
 
-Punt 3 en 4 zijn de kern. Zodra die er zijn, kan `cricut-bridge` een echte
-snede sturen.
+Points 3 and 4 are the core. Once those exist, `cricut-bridge` can send a real
+cut.

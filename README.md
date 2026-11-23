@@ -1,37 +1,36 @@
 # CricutControl
 
-Snelle, eigen aansturing van Cricut-machines (Maker en Joy) als alternatief
-voor Cricut Design Space. Bedoeld voor interoperabiliteit met hardware die je
-zelf bezit. Zie `docs/juridisch.md` voor de reikwijdte.
+Fast, independent control software for Cricut cutting machines (Maker and Joy)
+as an alternative to Cricut Design Space. Built for interoperability with
+hardware you own. See `docs/legal.md` for scope.
 
 ## Status
 
-Vroeg. Skelet plus protocoldocumentatie. De machinelaag is nog niet af: het
-versleutelde deel van de handshake naar de machine wordt met de hand ingevuld
-uit een opname van een eigen machine (zie `docs/protocol.md`, hoofdstuk
-Versleuteling). Er staan bewust geen sleutels of uit Design Space overgenomen
-code in deze repo.
+Early. Skeleton plus protocol documentation. The machine layer is not finished:
+the encrypted part of the handshake to the machine is filled in by hand from a
+capture of your own machine (see `docs/protocol.md`, chapter Encryption). This
+repository deliberately contains no keys and no code taken from Design Space.
 
-## Opbouw
+## Layout
 
-Design Space is een Electron-app die praat met losse hulpprocessen
-(`CricutDevice`, `CricutDeviceIO`, `CricutVulcanDevice`). Die helper opent het
-apparaat (USB of Bluetooth) en stuurt er bytes doorheen. Onze software neemt de
-rol van die helper over en praat rechtstreeks met de machine.
+Design Space is an Electron app that talks to separate helper processes
+(`CricutDevice`, `CricutDeviceIO`, `CricutVulcanDevice`). Such a helper opens
+the device (USB or Bluetooth) and streams bytes to it. This software takes over
+the role of that helper and talks to the machine directly.
 
 ```
-cricut-proto      protobuf-berichten (bridge + device-sessie); de rijke
-                  NativeModel-berichten staan als referentie in proto/reference/
-cricut-transport  USB/Bluetooth: apparaat vinden, openen, bytes lezen/schrijven
-cricut-bridge     sessie- en commandologica bovenop het transport
-cricut-cli        commandoregel: apparaten lijsten, status, een testsnede
+cricut-proto      protobuf messages (bridge + device session); the rich
+                  NativeModel messages are kept as reference in proto/reference/
+cricut-transport  USB/Bluetooth: find a device, open it, read/write bytes
+cricut-bridge     session and command logic on top of the transport
+cricut-cli        command line: list devices, status, a test cut
 ```
 
-De protobuf-schema's in `proto/reference/` zijn statisch uit de hulpprocessen
-van Design Space 10.12.122 gehaald, puur als beschrijving van het berichtformaat
-(interoperabiliteit). Ze worden niet uitgevoerd.
+The protobuf schemas in `proto/reference/` were recovered statically from the
+Design Space 10.12.122 helper processes, purely as a description of the message
+format (interoperability). They are not executed.
 
-## Bouwen
+## Build
 
 Rust (stable):
 
@@ -39,8 +38,8 @@ Rust (stable):
 cargo build
 ```
 
-## Bronnen
+## Documentation
 
-- `docs/protocol.md`  hoe de machines aangestuurd worden (het naslagdocument)
-- `docs/architectuur.md`  hoe Design Space is opgebouwd en wat wij overnemen
-- `docs/juridisch.md`  waarom dit privé blijft
+- `docs/protocol.md`      how the machines are driven (the reference document)
+- `docs/architecture.md`  how Design Space is built and what we take over
+- `docs/legal.md`         scope and limits

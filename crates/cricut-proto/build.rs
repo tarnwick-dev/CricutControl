@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
-// Compileert transport.proto met de pure-Rust protox-compiler, zodat er geen
-// losse protoc-binary op het systeem nodig is.
+// Compiles transport.proto with the pure-Rust protox compiler, so no separate
+// protoc binary is needed on the system.
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let proto = "transport.proto";
     println!("cargo:rerun-if-changed={proto}");

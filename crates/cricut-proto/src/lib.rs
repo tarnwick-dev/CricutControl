@@ -1,11 +1,11 @@
-//! Protobuf-berichten voor de app-naar-helper-laag.
+//! Protobuf messages for the app-to-helper layer.
 //!
-//! De types komen uit `transport.proto`, dat tijdens de build met prost wordt
-//! omgezet. De rijke machinecommando's (NativeModel.*) staan nog als los
-//! schema in `proto/reference/` en worden later toegevoegd.
+//! The types come from `transport.proto`, which is converted with prost during
+//! the build. The rich machine commands (NativeModel.*) are still a separate
+//! schema in `proto/reference/` and will be added later.
 
 pub mod bridge {
     include!(concat!(env!("OUT_DIR"), "/cricut.bridge.rs"));
 }
 
-pub use bridge::{Device, DeviceHandle, DeviceMessage, device_message};
+pub use bridge::{device_message, Device, DeviceHandle, DeviceMessage};

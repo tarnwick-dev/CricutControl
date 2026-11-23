@@ -1,20 +1,20 @@
 syntax = "proto3";
 
-// Transport/control-plane berichten tussen de app en de apparaat-helper,
-// gemodelleerd op de statisch herstelde schema's in proto/reference/
-// (bridge/proto/device/*.proto van device-common-next). Dit is onze eigen,
-// naar proto3 vertaalde weergave, geen overgenomen bestand. De rijke
-// NativeModel-commando's (PBDrawVectors enz.) komen later als apart schema.
+// Transport/control-plane messages between the app and the device helper,
+// modeled on the statically recovered schemas in proto/reference/
+// (bridge/proto/device/*.proto from device-common-next). This is our own,
+// proto3-translated rendering, not a copied file. The rich NativeModel commands
+// (PBDrawVectors etc.) will be added later as a separate schema.
 package cricut.bridge;
 
 message DeviceHandle {
   int32 value = 1;
 }
 
-// Ruwe, opaque beschrijving van een apparaat zoals het door de registry gaat.
+// Raw, opaque description of a device as it passes through the registry.
 message Device {
   DeviceHandle handle = 1;
-  bytes meta = 2; // serialized legacy model of metadata; nog niet uitgewerkt
+  bytes meta = 2; // serialized legacy model or metadata; not elaborated yet
 }
 
 enum RegistryAddResult {
@@ -52,8 +52,8 @@ message SessionOpenResponse { DeviceHandle handle = 1; SessionOpenResult result 
 message SessionCloseRequest { DeviceHandle handle = 1; }
 message SessionCloseResponse { DeviceHandle handle = 1; }
 
-// Het hart van de nieuwere opzet: de app stuurt ruwe apparaat-bytes door de
-// helper naar de machine. Wij bouwen die bytes zelf (zie docs/protocol.md).
+// The heart of the newer design: the app sends raw device bytes through the
+// helper to the machine. We build those bytes ourselves (see docs/protocol.md).
 message SessionDataStreamRequest { DeviceHandle handle = 1; bytes data = 2; }
 message SessionDataStreamResponse { DeviceHandle handle = 1; SessionDataStreamResult result = 2; }
 
