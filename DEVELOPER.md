@@ -1,11 +1,33 @@
-# Developer: implement the session cipher
+# Developer: the session cipher
 
-The whole stack is here and builds. The one slot left is the cipher. When it is
-filled in, this software can read and write a machine's encrypted command stream.
+`JoyXtraCipher` and `JoyXtraKeyExchange` are implemented in
+`crates/cricut-bridge/src/cipher.rs`. `cargo test -p cricut-bridge` runs the
+synthetic checks (the same vectors as `tools/session_cipher.py selftest` in the
+private pack) and, when the pack is present, checks encrypt and exchange
+against that Python reference.
+
+Set `CRICUT_SESSION_KEY` to a 32-byte key file outside the repo to also decrypt
+`joyxtra2.pcapng` and compare the first commands with `decoded/joyxtra2-first.txt`.
+Optional overrides: `CRICUT_CRYPTO_PACK`, `CRICUT_JOYXTRA_PCAP`,
+`CRICUT_JOYXTRA_DECODED`.
+
+Live: `cricut connect <BDADDR> --key <file>` decrypts with a key you already
+have. Without `--key`, a config directory supplies the exchange inputs
+(`--config`, or `~/.config/cricut` when `materials.txt` is there). The first
+plaintext 48-byte body is the exchange. Files in that directory, read exactly:
+
+- `materials.txt` — the materials text, including any trailing newline
+- `seed`, `seed.bin`, or `seed.hex` — 33 raw bytes, or 66 hex chars
+- `firmware` — decimal firmware, for example `8.618`
+- `serial` — machine serial, used when the matching record asks for it
+- `machine-type` — optional, default `0x13`
+
+The whole stack builds. With the cipher installed, this software can read and
+write a machine's encrypted command stream.
 
 ```
 cargo build        # builds the workspace
-cargo test         # codec tests pass; add your cipher tests
+cargo test         # codec tests and the cipher checks
 ```
 
 ## What is done
@@ -15,14 +37,15 @@ cargo test         # codec tests pass; add your cipher tests
 - `cricut-transport` — a working Linux RFCOMM transport (`RfcommTransport`):
   opens classic-Bluetooth channel 4 to a paired machine, read/write.
 - `cricut-bridge`  — the SPP frame codec (`Frame`, `FrameReader`: the 2-byte
-  header with the encrypted-flag bit), and `MachineSession` (open phase, key
-  exchange hook, encrypted phase). All of this works with `NullCipher`.
+  header with the encrypted-flag bit), `MachineSession` (open phase, key
+  exchange, encrypted phase), and `JoyXtraCipher`. `NullCipher` is the open
+  phase.
 - `cricut-cli`     — `cricut connect <BDADDR>` opens the link and prints the
-  frames the machine sends, decoded.
+  frames the machine sends. `--key` or `--config` decrypts the encrypted phase.
 
-## What you implement
+## What the cipher does
 
-Everything is in **`crates/cricut-bridge/src/cipher.rs`**, marked `DEVELOPER`:
+Everything is in **`crates/cricut-bridge/src/cipher.rs`**:
 
 1. `JoyXtraCipher::encrypt_body` / `decrypt_body` — the per-body session cipher.
 2. `JoyXtraKeyExchange::derive_session_key` — derive the session key from the

@@ -7,10 +7,10 @@ hardware you own. See `docs/legal.md` for scope.
 ## Status
 
 The stack is in place and builds: the SPP frame codec, a Linux RFCOMM transport
-(classic Bluetooth, channel 4), the session (open phase, key-exchange hook,
-encrypted phase) and the command opcodes. The one slot left is the session
-cipher — see `DEVELOPER.md`. Everything works today with `NullCipher` for the
-plaintext open phase.
+(classic Bluetooth, channel 4), the session (open phase, key exchange,
+encrypted phase) and the command opcodes. `JoyXtraCipher` is AES-256-ECB with
+the checksum and the materials key exchange. `NullCipher` still covers the
+plaintext open phase. Key material is loaded at runtime. See `DEVELOPER.md`.
 
 This repository deliberately contains no keys, no unwrap seed, no materials
 string, no captures, and no code taken from Design Space. Key material is loaded
