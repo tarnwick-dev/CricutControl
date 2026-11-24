@@ -20,7 +20,7 @@ struct SockaddrRc {
     rc_channel: u8,
 }
 
-/// Parse "FC:97:A8:66:6C:6C" into the little-endian 6-byte form BlueZ wants.
+/// Parse "AA:BB:CC:DD:EE:FF" into the little-endian 6-byte form BlueZ wants.
 fn parse_bdaddr(s: &str) -> Result<[u8; 6], TransportError> {
     let parts: Vec<&str> = s.split(':').collect();
     if parts.len() != 6 {
