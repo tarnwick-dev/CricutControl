@@ -26,12 +26,13 @@ and we do not copy Cricut's code into this repository.
 
 ## Scope
 
-This repository contains a skeleton and a description of the protocol for
-interoperability with hardware you own. Hard limits that stand:
+This repository contains the protocol stack, including an implementation of the
+session cipher, for interoperability with hardware you own. Hard limits that
+stand:
 
 - **No keys and no code taken from Design Space** in the repository. The
-  encrypted part of the handshake is filled in by hand from a capture of your
-  own machine, not by copying key material out of Cricut's software. That is the
+  session key, the unwrap seed, and the materials text are loaded at runtime
+  from outside version control. They are not copied into this tree. That is the
   difference between studying how it works (allowed for interoperability) and
   circumventing a protection measure with copied keys (the line).
 

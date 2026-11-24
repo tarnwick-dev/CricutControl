@@ -12,3 +12,4 @@ prost.workspace = true
 bytes.workspace = true
 thiserror.workspace = true
 tracing.workspace = true
+aes.workspace = true

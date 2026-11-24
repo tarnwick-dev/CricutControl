@@ -1,17 +1,16 @@
 # Protocol: how we drive the machines
 
-This is the reference document. It describes how a Cricut machine is controlled,
-as far as we know from static analysis, and it marks exactly where that
-knowledge stops and a capture of your own machine is needed. The part you fill
-in yourself (the encryption) is in the Encryption chapter.
+This is the reference document. It describes how a Cricut machine is controlled.
+The session cipher is in the Encryption chapter. Key material stays outside
+this repository.
 
 Source: static analysis of Design Space 10.12.122. Tag per claim: **(code)** =
 seen in the binaries/schemas, **(inferred)** = reasoning, **(unknown)** = not
 yet established.
 
-> Status: Chain, Transport, Machine code names, Command model, Encryption and
-> Capture are filled in from the static analysis. The byte layout of the
-> commands and the encryption itself come from a capture (see chapter 6).
+> Status: Chain, Transport, Machine code names, Command model, and Encryption
+> are written up. The byte layout of a real cut still comes from a capture
+> (see chapter 6).
 
 ---
 
@@ -240,39 +239,39 @@ we ever emulate the helper instead. `config.bin` is a dead end: AES-256-CBC with
 a key derived from an embedded string, and it only holds a build manifest
 (environment, version, git commit), no device keys.
 
-## 5. Encryption (you fill this in)
+## 5. Encryption
 
-This chapter is deliberately not worked out here. The encryption of the
-connection to the machine is both the blocking point for automated analysis and
-the legally sensitive point (see `docs/legal.md`). This repository contains no
-keys and no cryptography code taken from Design Space.
+The connection has a plaintext open phase and then an encrypted phase. The
+transition is one 48-byte plaintext body. The session key is different every
+connection. This repository contains no keys, no unwrap seed, and no materials
+string (see `docs/legal.md`). Those are loaded at runtime.
 
-What we know in outline, purely as a frame (**inferred from public sources,
-unconfirmed**):
+Command and response bodies are AES-256-ECB under that 32-byte key. There is no
+IV. Each block is independent.
 
-- The connection has an **open phase** (reading status, registers, starting the
-  device) and then an **encrypted phase** for motion and cutting.
-- The transition is a **key exchange**: the software sends a frame, the machine
-  replies, and from that follows a session key that differs per connection.
-- Public projects use key material that sits inside Cricut's software for this.
-  Copying that material is exactly the line. For machines you own, the clean way
-  is to **capture the handshake of your own machine** and implement the
-  algorithm yourself from what you see in that capture, without copying Cricut's
-  key tables.
+The host seals a body before encryption:
 
-In the code this attaches to `cricut-bridge`:
+1. Round the length down to a multiple of 16 (`n = len & !0x0f`).
+2. Allocate `n + 16` zero bytes and copy the body into the front.
+3. Store the 8-bit sum of every preceding byte in the last byte.
+4. AES-256-ECB encrypt that buffer.
 
-- `FrameCodec`: the framing (length header, byte order, checksum) around each
-  message.
-- `SessionCipher`: the encryption layer. `NullCipher` already exists for the
-  open phase and for replay tests on a capture. Your implementation goes behind
-  it, with key material that stays **outside the repo** (see `.gitignore`:
-  `*.key`, `/private/`).
+Decrypt is the inverse. The length must be a positive multiple of 16. Trailing
+`0x00` bytes are dropped when the last byte is `0x00`. The low 8 bits of the
+sum of every byte except the last must equal the last byte. When the first
+byte is not zero, the first two bytes are swapped before the command parser
+sees the body. Host commands already start with `0x00`.
 
-The building blocks you will likely need (AES, and depending on the capture a
-key exchange) are ordinary Rust crates (`aes`, `cipher`, and for a possible
-exchange `x25519-dalek` or whatever the capture shows). That choice depends on
-what you see in the handshake of your own machine.
+The 32-byte session key is taken from the decrypted 48-byte exchange body, at
+the offset in the first plaintext byte. The wrap key for that decrypt is built
+from the materials record for this machine: device type (Joy Xtra is `0x13`),
+firmware bounds stored as two float32 values inside one decimal integer, even
+or odd bytes of the record's key material, walked forward or backward, and on
+the primary match five bytes of the serial when the record says so. The
+materials text itself is unwrapped with a 33-byte seed supplied at runtime.
+`JoyXtraCipher` and `JoyXtraKeyExchange` implement this. `NullCipher` remains
+the open phase. Key files stay outside version control (see `.gitignore`:
+`*.key`, `/private/`).
 
 ---
 
